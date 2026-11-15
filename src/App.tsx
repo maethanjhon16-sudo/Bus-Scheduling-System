@@ -1,5 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import Login from './Login'
 import type { BusSchedule, ScheduleInput } from './types'
 import './App.css'
 
@@ -22,6 +24,8 @@ const formatFare = (n: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(n)
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [showLogin, setShowLogin] = useState(false)
   const [schedules, setSchedules] = useState<BusSchedule[]>([])
   const [search, setSearch] = useState('')
   const [form, setForm] = useState(emptyForm)
@@ -29,6 +33,15 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
+
+  const isAdmin = session !== null
+
+  // Track admin login state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
+    return () => data.subscription.unsubscribe()
+  }, [])
 
   // Display + search by departure location (debounced, server-side)
   useEffect(() => {
@@ -55,7 +68,7 @@ export default function App() {
   const onChange = (e: ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value })
 
-  // Add + edit
+  // Add + edit (admin only; the database also enforces this)
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const payload: ScheduleInput = {
@@ -83,7 +96,7 @@ export default function App() {
       departure_time: s.departure_time.slice(0, 5),
       fare: String(s.fare),
     })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
   function cancelEdit() {
@@ -91,7 +104,6 @@ export default function App() {
     setForm(emptyForm)
   }
 
-  // Delete
   const remove = async (s: BusSchedule) => {
     if (!confirm(`Delete ${s.bus_number} (${s.origin} to ${s.destination})?`)) return
     const { error } = await supabase.from('bus_schedules').delete().eq('schedule_id', s.schedule_id)
@@ -99,10 +111,27 @@ export default function App() {
     setReload((n) => n + 1)
   }
 
+  const logout = async () => {
+    await supabase.auth.signOut()
+    cancelEdit()
+  }
+
   return (
     <main>
       <header>
-        <h1>Bus Schedules</h1>
+        <div className="header-top">
+          <h1>Bus Schedules</h1>
+          {isAdmin ? (
+            <div className="admin-bar">
+              <span>Admin mode</span>
+              <button onClick={logout}>Log out</button>
+            </div>
+          ) : (
+            <button className="link" onClick={() => setShowLogin((v) => !v)}>
+              Admin log-in
+            </button>
+          )}
+        </div>
         <label className="search">
           <span>Departing from</span>
           <input
@@ -113,6 +142,8 @@ export default function App() {
           />
         </label>
       </header>
+
+      {showLogin && !isAdmin && <Login onDone={() => setShowLogin(false)} />}
 
       {error && <p className="error" role="alert">{error}</p>}
 
@@ -126,7 +157,7 @@ export default function App() {
               <th>Destination</th>
               <th>Departs</th>
               <th>Fare</th>
-              <th />
+              {isAdmin && <th />}
             </tr>
           </thead>
           <tbody>
@@ -138,35 +169,43 @@ export default function App() {
                 <td data-label="Destination">{s.destination}</td>
                 <td data-label="Departs" className="time">{formatTime(s.departure_time)}</td>
                 <td data-label="Fare">{formatFare(s.fare)}</td>
-                <td className="actions">
-                  <button onClick={() => startEdit(s)}>Edit</button>
-                  <button className="danger" onClick={() => remove(s)}>Delete</button>
-                </td>
+                {isAdmin && (
+                  <td className="actions">
+                    <button onClick={() => startEdit(s)}>Edit</button>
+                    <button className="danger" onClick={() => remove(s)}>Delete</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
         {!loading && schedules.length === 0 && (
           <p className="empty">
-            {search ? `No buses leave from "${search}". Try another location.` : 'No schedules yet. Add the first one below.'}
+            {search
+              ? `No buses leave from "${search}". Try another location.`
+              : isAdmin
+                ? 'No schedules yet. Add the first one below.'
+                : 'No schedules are published yet. Please check back later.'}
           </p>
         )}
       </section>
 
-      <section aria-label="Schedule form">
-        <h2>{editingId === null ? 'Add a schedule' : `Edit schedule #${editingId}`}</h2>
-        <form onSubmit={onSubmit}>
-          <label>Bus number<input name="bus_number" value={form.bus_number} onChange={onChange} required /></label>
-          <label>Origin<input name="origin" value={form.origin} onChange={onChange} required /></label>
-          <label>Destination<input name="destination" value={form.destination} onChange={onChange} required /></label>
-          <label>Departure time<input type="time" name="departure_time" value={form.departure_time} onChange={onChange} required /></label>
-          <label>Fare (PHP)<input type="number" name="fare" min="0" step="0.01" value={form.fare} onChange={onChange} required /></label>
-          <div className="form-actions">
-            <button type="submit" className="primary">{editingId === null ? 'Add schedule' : 'Save changes'}</button>
-            {editingId !== null && <button type="button" onClick={cancelEdit}>Cancel</button>}
-          </div>
-        </form>
-      </section>
+      {isAdmin && (
+        <section aria-label="Schedule form">
+          <h2>{editingId === null ? 'Add a schedule' : `Edit schedule #${editingId}`}</h2>
+          <form onSubmit={onSubmit}>
+            <label>Bus number<input name="bus_number" value={form.bus_number} onChange={onChange} required /></label>
+            <label>Origin<input name="origin" value={form.origin} onChange={onChange} required /></label>
+            <label>Destination<input name="destination" value={form.destination} onChange={onChange} required /></label>
+            <label>Departure time<input type="time" name="departure_time" value={form.departure_time} onChange={onChange} required /></label>
+            <label>Fare (PHP)<input type="number" name="fare" min="0" step="0.01" value={form.fare} onChange={onChange} required /></label>
+            <div className="form-actions">
+              <button type="submit" className="primary">{editingId === null ? 'Add schedule' : 'Save changes'}</button>
+              {editingId !== null && <button type="button" onClick={cancelEdit}>Cancel</button>}
+            </div>
+          </form>
+        </section>
+      )}
     </main>
   )
 }

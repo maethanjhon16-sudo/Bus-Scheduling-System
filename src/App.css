@@ -52,3 +52,14 @@ form label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; 
   td[data-label]::before { content: attr(data-label); color: var(--muted); }
   .actions { justify-content: flex-end; }
 }
+
+/* Admin login */
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.admin-bar { display: flex; align-items: center; gap: 8px; color: var(--amber); font-weight: 600; }
+.admin-bar button { margin-left: 0; }
+header button.link { background: none; border: 0; color: #c3d0da; text-decoration: underline; padding: 4px 0; margin: 0; font-weight: 500; }
+header button.link:hover { color: #fff; }
+.login { display: flex; flex-direction: column; gap: 14px; background: var(--panel); padding: 20px; border-radius: 0 0 6px 6px; max-width: 420px; margin-bottom: 16px; border-top: 1px solid var(--line); }
+.login label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; font-size: .9rem; }
+.login .form-actions button:first-child { margin-left: 0; }
+button:disabled { opacity: .6; cursor: wait; }
