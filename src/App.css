@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #e9eef2;
+  --panel: #ffffff;
+  --ink: #14202b;
+  --muted: #5b6b79;
+  --line: #cdd7df;
+  --route: #0e7c86;
+  --board: #14202b;
+  --amber: #f2b705;
+  --danger: #b3261e;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 'Barlow', system-ui, sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+
+header { background: var(--board); color: #fff; padding: 24px; border-radius: 6px 6px 0 0; border-bottom: 4px solid var(--amber); }
+h1, h2, th, .time, .bus { font-family: 'Barlow Condensed', sans-serif; }
+h1 { margin: 0 0 16px; font-size: 2.6rem; line-height: 1; letter-spacing: .01em; }
+h2 { font-size: 1.6rem; margin: 32px 0 12px; }
+
+.search { display: flex; flex-direction: column; gap: 4px; max-width: 360px; font-size: .9rem; color: #c3d0da; }
+input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; width: 100%; background: #fff; color: var(--ink); }
+input:focus-visible, button:focus-visible { outline: 3px solid var(--amber); outline-offset: 1px; }
+
+table { width: 100%; border-collapse: collapse; background: var(--panel); }
+th { text-align: left; font-size: 1.05rem; padding: 10px 12px; background: #dbe4ea; color: var(--muted); }
+td { padding: 12px; border-top: 1px solid var(--line); }
+.bus { font-size: 1.3rem; font-weight: 700; color: var(--route); }
+.time { font-size: 1.5rem; font-weight: 700; }
+.actions { text-align: right; white-space: nowrap; }
+
+button { font: inherit; font-weight: 600; padding: 8px 14px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); cursor: pointer; margin-left: 6px; }
+button:hover { border-color: var(--ink); }
+button.primary { background: var(--route); border-color: var(--route); color: #fff; }
+button.danger { color: var(--danger); }
+
+form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; background: var(--panel); padding: 20px; border-radius: 6px; }
+form label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; font-size: .9rem; }
+.form-actions { grid-column: 1 / -1; }
+.form-actions button:first-child { margin-left: 0; }
+
+.error { background: #fde7e5; color: var(--danger); padding: 10px 14px; border-radius: 4px; }
+.empty { background: var(--panel); margin: 0; padding: 24px; color: var(--muted); border-top: 1px solid var(--line); }
+
+@media (max-width: 700px) {
+  thead { display: none; }
+  tr { display: block; border-top: 1px solid var(--line); padding: 8px 0; background: var(--panel); }
+  td { display: flex; justify-content: space-between; border: 0; padding: 4px 12px; }
+  td[data-label]::before { content: attr(data-label); color: var(--muted); }
+  .actions { justify-content: flex-end; }
+}
